@@ -27,7 +27,6 @@ import {
   Chip,
   Button,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
 } from "@mui/material";
@@ -55,6 +54,8 @@ function App() {
     }
   };
 
+  // In the future we can implement elastic search for
+  // larger amounts of data and more percise searching.
   const handleSearch = (event) => {
     setSearch(event.target.value);
     setTableData(() => ({
@@ -82,11 +83,12 @@ function App() {
     }));
   };
 
+  // For better handling of large amounts of data we could implement
+  // the use of indexedDB for local storage alternative.
   useEffect(() => {
     const tableDataFromStorage = localStorage.getItem("tableData");
 
     if (tableDataFromStorage) {
-      console.log("updating state of tableData");
       setTableData(JSON.parse(tableDataFromStorage));
     }
 
@@ -95,15 +97,13 @@ function App() {
 
   useEffect(() => {
     if (isLoaded) {
-      console.log("saving tableData", tableData);
-
       const encodedTableData = JSON.stringify(tableData);
 
       localStorage.setItem("tableData", encodedTableData);
     }
   }, [tableData, isLoaded]);
 
-  const tree = useTree(
+  const treeContext = useTree(
     { nodes: tableData.data },
     {},
     {
@@ -126,7 +126,6 @@ function App() {
             sx={{ color: "white" }}
           />
         );
-        break;
       case "boolean":
         return (
           <Chip
@@ -134,10 +133,9 @@ function App() {
             color={data === true ? "success" : "error"}
           />
         );
-        break;
       case "object":
         return (
-          <FormControl fullWidth size="small" sx={{}}>
+          <FormControl fullWidth size="small">
             <Select
               value={data.value}
               label="Age"
@@ -155,10 +153,16 @@ function App() {
             </Select>
           </FormControl>
         );
-        break;
     }
   };
 
+  // So if you will hide the first column the tree icon won't be hidden with it
+  const ordinalNoOfFirstColumn = sortedColumns
+    ?.filter((current) => !hiddenColumns.includes(current.title))
+    .shift()?.ordinalNo;
+
+  // If we will use large amounts of data we can add a skeleton loader
+  // for better user experience.
   return (
     <Box>
       <AppBar position="static" sx={{ backgroundColor: "white", paddingY: 2 }}>
@@ -210,21 +214,23 @@ function App() {
           </FormGroup>
         </Box>
       </Box>
-      <Table data={{ nodes: tableData.data || {} }} theme={theme} tree={tree}>
+      <Table
+        data={{ nodes: tableData.data || {} }}
+        theme={theme}
+        tree={treeContext}
+      >
         {(tableList) => (
           <>
             <Header>
               <HeaderRow sx={{ fontSize: "18px" }}>
-                {sortedColumns
-                  // .filter((column) => !hiddenColumns.includes(column.title))
-                  .map((current, index) => (
-                    <HeaderCell
-                      key={index}
-                      hide={hiddenColumns.includes(current.title)}
-                    >
-                      {current.title}
-                    </HeaderCell>
-                  ))}
+                {sortedColumns.map((current, index) => (
+                  <HeaderCell
+                    key={index}
+                    hide={hiddenColumns.includes(current.title)}
+                  >
+                    {current.title}
+                  </HeaderCell>
+                ))}
               </HeaderRow>
             </Header>
 
@@ -232,7 +238,8 @@ function App() {
               {tableList.map((row) => (
                 <Row key={row.rowId} item={row}>
                   {sortedColumns.map((column) =>
-                    row?.nodes && column.ordinalNo === 1 ? (
+                    row?.nodes &&
+                    column.ordinalNo === ordinalNoOfFirstColumn ? (
                       <>
                         <CellTree
                           key={column.id}
