@@ -25,12 +25,12 @@ import {
   FormControlLabel,
   Checkbox,
   Chip,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
-
-// Icons
-import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
-import FolderIcon from "@mui/icons-material/Folder";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 
 import fetchedTableData from "./data/tableData";
 
@@ -38,11 +38,11 @@ import THEME from "./theme.js";
 
 function App() {
   const [tableData, setTableData] = useState(fetchedTableData);
-  const [sortedColumns, setSortedColumns] = useState(
+  const [sortedColumns, _] = useState(
     tableData?.columns?.sort((a, b) => a.ordinalNo - b.ordinalNo)
   );
   const [search, setSearch] = useState("");
-  const [hiddenColumns, setHiddenColumns] = useState(["Column 1"]);
+  const [hiddenColumns, setHiddenColumns] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const theme = useTheme(THEME);
@@ -84,7 +84,6 @@ function App() {
 
   useEffect(() => {
     const tableDataFromStorage = localStorage.getItem("tableData");
-    console.log("tableDataFromStorage", JSON.parse(tableDataFromStorage).data);
 
     if (tableDataFromStorage) {
       console.log("updating state of tableData");
@@ -104,18 +103,13 @@ function App() {
     }
   }, [tableData, isLoaded]);
 
-  // const tree = useTree(
-  //   tableData,
-  //   {},
-  //   {
-  //     treeIcon: {
-  //       margin: "4px",
-  //       iconDefault: <InsertDriveFileOutlinedIcon fontSize="small" />,
-  //       iconRight: <FolderIcon fontSize="small" />,
-  //       iconDown: <FolderOpenIcon fontSize="small" />,
-  //     },
-  //   }
-  // );
+  const tree = useTree(
+    { nodes: tableData.data },
+    {},
+    {
+      clickType: TreeExpandClickTypes.ButtonClick,
+    }
+  );
 
   const renderByType = (data, columnId, rowId) => {
     switch (typeof data) {
@@ -142,6 +136,25 @@ function App() {
         );
         break;
       case "object":
+        return (
+          <FormControl fullWidth size="small" sx={{}}>
+            <Select
+              value={data.value}
+              label="Age"
+              onChange={(event) =>
+                handleUpdate(
+                  { ...data, value: event.target.value },
+                  columnId,
+                  rowId
+                )
+              }
+            >
+              {data.options.map((current) => (
+                <MenuItem value={current.value}>{current.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        );
         break;
     }
   };
@@ -154,11 +167,11 @@ function App() {
             label="Search Task"
             value={search}
             onChange={handleSearch}
-            // color="white"
           />
           <Typography variant="h4" component="div" sx={{ color: "gray" }}>
             Data Management System
           </Typography>
+          <Button onClick={() => localStorage.clear()}>Reset Storage</Button>
         </Toolbar>
       </AppBar>
       <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -197,11 +210,7 @@ function App() {
           </FormGroup>
         </Box>
       </Box>
-      <Table
-        data={{ nodes: tableData.data || {} }}
-        theme={theme}
-        // tree={tree}
-      >
+      <Table data={{ nodes: tableData.data || {} }} theme={theme} tree={tree}>
         {(tableList) => (
           <>
             <Header>
@@ -224,9 +233,15 @@ function App() {
                 <Row key={row.rowId} item={row}>
                   {sortedColumns.map((column) =>
                     row?.nodes && column.ordinalNo === 1 ? (
-                      <CellTree key={column.id} item={row}>
-                        {row.title}
-                      </CellTree>
+                      <>
+                        <CellTree
+                          key={column.id}
+                          item={row}
+                          hide={hiddenColumns.includes(column.title)}
+                        >
+                          {renderByType(row[column.id], column.id, row.id)}
+                        </CellTree>
+                      </>
                     ) : (
                       <Cell
                         key={column.id}

@@ -11,7 +11,7 @@ export default {
       }
     `,
   HeaderRow: `
-      font-size: 10px;
+      font-size: 14px;
       color: var(--theme-ui-colors-text-light);
   
       .th {
@@ -36,10 +36,6 @@ export default {
   
       padding: 8px;
       height: 52px;
-  
-      svg {
-        fill: var(--theme-ui-colors-text);
-      }
     `,
   HeaderCell: ``,
   Cell: ``,
