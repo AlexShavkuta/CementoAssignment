@@ -43,6 +43,7 @@ function App() {
   );
   const [search, setSearch] = useState("");
   const [hiddenColumns, setHiddenColumns] = useState(["Column 1"]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const theme = useTheme(THEME);
 
@@ -81,13 +82,27 @@ function App() {
     }));
   };
 
-  // A better way is to do it with indexed DB
   useEffect(() => {
-    // json encode the data
-    const encodedTableData = JSON.stringify(tableData);
-    // save into the local storage
-    localStorage.setItem("tableData", encodedTableData);
-  }, [tableData]);
+    const tableDataFromStorage = localStorage.getItem("tableData");
+    console.log("tableDataFromStorage", JSON.parse(tableDataFromStorage).data);
+
+    if (tableDataFromStorage) {
+      console.log("updating state of tableData");
+      setTableData(JSON.parse(tableDataFromStorage));
+    }
+
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      console.log("saving tableData", tableData);
+
+      const encodedTableData = JSON.stringify(tableData);
+
+      localStorage.setItem("tableData", encodedTableData);
+    }
+  }, [tableData, isLoaded]);
 
   // const tree = useTree(
   //   tableData,
@@ -193,8 +208,11 @@ function App() {
               <HeaderRow sx={{ fontSize: "18px" }}>
                 {sortedColumns
                   // .filter((column) => !hiddenColumns.includes(column.title))
-                  .map((current) => (
-                    <HeaderCell hide={hiddenColumns.includes(current.title)}>
+                  .map((current, index) => (
+                    <HeaderCell
+                      key={index}
+                      hide={hiddenColumns.includes(current.title)}
+                    >
                       {current.title}
                     </HeaderCell>
                   ))}
